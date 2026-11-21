@@ -1,0 +1,26 @@
+name: precios
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: precios
+  cancel-in-progress: false
+jobs:
+  feed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Calcular
+        run: python3 feed_precios.py --salida precios-select.json
+      - name: Publicar (un solo commit, para que el repo no crezca)
+        run: |
+          git config user.name "select-precios-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan nuevo
+          git add -A
+          git commit -q -m "precios $(python3 -c "import json;print(json.load(open('precios-select.json'))['ts'])")"
+          git push -f origin nuevo:main
